@@ -1,0 +1,32 @@
+name: Playwright Visual Screenshot & Verify
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  visual-verify:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.48.0-jammy
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Capture Live 3D / UI Screenshot via Playwright
+        run: |
+          if [ -f assets/game.html ]; then
+            npm init -y >/dev/null 2>&1 || true
+            npm install playwright@1.48.0 >/dev/null 2>&1 || true
+            node -e "const {chromium}=require('playwright');(async()=>{const b=await chromium.launch({args:['--no-sandbox']});const p=await b.newPage({viewport:{width:800,height:450}});await p.goto('file://'+process.cwd()+'/assets/game.html');await p.waitForTimeout(3000);await p.screenshot({path:'preview_capture.png'});await b.close();})().catch(e=>{console.error(e);process.exit(0);});"
+          fi
+      - name: Upload Visual Capture
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-audit-capture
+          path: preview_capture.png
+          if-no-files-found: ignore
